@@ -9,7 +9,7 @@ function getCollection(done) {
         console.log('Connected to database');
         db.collection('servitudes', function (err, servColl) {
             if (err) return done(err);
-            servColl.createIndex({ assiette: '2dsphere' }, function (err) {
+            servColl.createIndex({ assiette: '2dsphere' }, { background: true }, function (err) {
                 if (err) return done(err);
                 done(null, servColl);
             });
