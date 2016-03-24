@@ -9,8 +9,9 @@ function getCollection(done) {
         console.log('Connected to database');
         db.collection('servitudes', function (err, servColl) {
             if (err) return done(err);
-            servColl.createIndex({ assiette: '2dsphere' }, { background: true }, function (err) {
+            servColl.createIndex({ assiette: '2dsphere' }, function (err, result) {
                 if (err) return done(err);
+                console.log(`Index created: ${result}`)
                 done(null, servColl);
             });
         });
