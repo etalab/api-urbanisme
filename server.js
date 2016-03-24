@@ -7,7 +7,13 @@ function getCollection(done) {
     MongoClient.connect(process.env.MONGODB_URL || 'mongodb://localhost/urba', function (err, db) {
         if (err) return done(err);
         console.log('Connected to database');
-        db.collection('servitudes', done);
+        db.collection('servitudes', function (err, servColl) {
+            if (err) return done(err);
+            servColl.createIndex({ assiette: '2dsphere' }, function (err) {
+                if (err) return done(err);
+                done(null, servColl);
+            });
+        });
     });
 }
 
@@ -30,17 +36,11 @@ getCollection(function (err, servColl) {
 
     app.post('/servitudes', function (req, res, next) {
         servColl
-            .find({ geometry: { $geoIntersects: { $geometry: req.body.geom } } })
-            .project({ geometry: 0 })
+            .find({ assiette: { $geoIntersects: { $geometry: req.body.geom } } })
+            .project({ assiette: 0 })
             .toArray(function (err, servitudes) {
                 if (err) return next(err);
-                res.send(servitudes.map(servitude => ({
-                    nom: servitude.properties.libelle,
-                    type: 'AC1',
-                    codeMerimee: servitude.properties.cd_merimee,
-                    libelleCommune: servitude.properties.lb_com,
-                    id: servitude.properties.id_obj
-                })));
+                res.send(servitudes);
             });
     });
 
