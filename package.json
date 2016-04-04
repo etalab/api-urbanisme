@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "start": "node server",
-    "extract-transform": "node transform",
-    "load": "mongoimport --drop --jsonArray -d urba -c servitudes data/servitudes_ac1.json",
-    "etl": "npm run extract-transform && npm run load",
+    "etl": "node transform",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jérôme Desboeufs <jerome.desboeufs@data.gouv.fr>",
@@ -15,7 +13,8 @@
     "body-parser": "^1.15.0",
     "cors": "^2.7.1",
     "express": "^4.13.4",
-    "mongodb": "^2.1.11",
+    "lodash": "^4.7.0",
+    "mongodb": "^2.1.14",
     "request": "^2.69.0",
     "through2-map": "^2.0.0"
   }
