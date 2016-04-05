@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "scripts": {
     "start": "node server",
-    "etl": "node transform",
+    "prepare-data": "node prepare-data",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jérôme Desboeufs <jerome.desboeufs@data.gouv.fr>",
   "license": "MIT",
   "dependencies": {
     "JSONStream": "^1.1.1",
+    "bluebird": "^3.3.4",
     "body-parser": "^1.15.0",
     "cors": "^2.7.1",
+    "debug": "^2.2.0",
     "express": "^4.13.4",
     "lodash": "^4.7.0",
     "mongodb": "^2.1.14",
