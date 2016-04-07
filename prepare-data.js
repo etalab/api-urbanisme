@@ -1,3 +1,4 @@
+'use strict';
 const JSONStream = require('JSONStream');
 const map = require('through2-map')
 const request = require('request');
@@ -6,9 +7,12 @@ const ServitudeWriter = require('./lib/ServitudeWriter');
 const Promise = require('bluebird');
 const getCollection = require('./lib/mongodb').getCollection;
 const debug = require('debug')('prepare-data');
+const turf = require('turf');
 
-const datasets = {
-    generateur: {
+const datasets = [
+    // Midi-Pyrénées
+    {
+        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
         resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_immeuble',
         source: 'passerelle',
         key: 'codeMerimee',
@@ -21,7 +25,8 @@ const datasets = {
             type: 'AC1',
         },
     },
-    assiette: {
+    {
+        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
         resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_perimetr',
         source: 'passerelle',
         key: 'codeMerimee',
@@ -35,6 +40,34 @@ const datasets = {
             type: 'AC1',
         },
     },
+    // Rhône-Alpes
+    {
+        coverage: ['dep73'],
+        resourceId: 'file-packages/61e138a0f0287e348941002cef37d138b9ca6ed9/N_MONUMENT_HISTO_S_073',
+        source: 'passerelle',
+        key: 'codeMerimee',
+        filters: ['computeAssietteAC1'],
+        mapping: {
+            nom: 'properties.IMMEUBLE',
+            codeMerimee: 'properties.REF_MERIM',
+            libelleCommune: 'properties.COMMUNE',
+            generateur: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
+];
+
+const filters = {
+        computeAssietteAC1: row => {
+            if (row.generateur) {
+                const feature = { type: 'Feature', geometry: row.generateur };
+                const buffer = turf.merge(turf.buffer(feature, 500, 'meters')).geometry;
+                row.assiette = buffer;
+            }
+            return row;
+        },
 };
 
 function getPasserelleRequest(resourceId) {
@@ -54,6 +87,7 @@ function getServitudeWriter(key) {
 
 function importDataset(dataset, done) {
     debug('importing dataset');
+    let count = 0;
     return new Promise((resolve, reject) => {
         getPasserelleRequest(dataset.resourceId)
             .pipe(getParser())
@@ -66,10 +100,17 @@ function importDataset(dataset, done) {
                 _.forEach(dataset.set, (val, attrName) => {
                     transformedRow[attrName] = val;
                 });
+                if (dataset.filters) {
+                    _.forEach(dataset.filters, filterName => filters[filterName](transformedRow));
+                }
+                count++;
                 return transformedRow;
             }))
             .pipe(getServitudeWriter(dataset.key))
-            .on('finish', resolve)
+            .on('finish', () => {
+                debug('finished: %d', count);
+                resolve();
+            })
             .on('error', reject);
     });
 }
@@ -90,7 +131,7 @@ function createAssietteIndex() {
 }
 
 function importAllDatasets() {
-    return Promise.each([datasets.assiette, datasets.generateur], importDataset);
+    return Promise.each(datasets, importDataset);
 }
 
 removeAssietteIndex()
