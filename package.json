@@ -18,7 +18,7 @@
     "lodash": "^4.7.0",
     "mongodb": "^2.1.14",
     "request": "^2.69.0",
-    "through2-map": "^2.0.0",
+    "through2": "^2.0.1",
     "turf": "^2.0.2"
   }
 }

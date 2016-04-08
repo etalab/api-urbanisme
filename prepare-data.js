@@ -1,6 +1,5 @@
 'use strict';
 const JSONStream = require('JSONStream');
-const map = require('through2-map')
 const request = require('request');
 const _ = require('lodash');
 const ServitudeWriter = require('./lib/ServitudeWriter');
@@ -8,6 +7,7 @@ const Promise = require('bluebird');
 const getCollection = require('./lib/mongodb').getCollection;
 const debug = require('debug')('prepare-data');
 const turf = require('turf');
+const through2 = require('through2');
 
 const datasets = [
     // Midi-Pyrénées
@@ -91,7 +91,7 @@ function importDataset(dataset, done) {
     return new Promise((resolve, reject) => {
         getPasserelleRequest(dataset.resourceId)
             .pipe(getParser())
-            .pipe(map.obj(row => {
+            .pipe(through2.obj((row, encoding, cb) => {
                 const transformedRow = {};
                 _.forEach(dataset.mapping, (mappingDef, attrName) => {
                     const val = _.get(row, mappingDef);
@@ -104,7 +104,7 @@ function importDataset(dataset, done) {
                     _.forEach(dataset.filters, filterName => filters[filterName](transformedRow));
                 }
                 count++;
-                return transformedRow;
+                cb(null, transformedRow);
             }))
             .pipe(getServitudeWriter(dataset.key))
             .on('finish', () => {
