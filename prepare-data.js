@@ -14,6 +14,8 @@ const format = require('pg-format');
 const iconv = require('iconv-lite');
 const combine = require('stream-combiner');
 
+const globalCoverage = new Set();
+
 const datasets = [
     // Midi-Pyrénées
     {
@@ -303,9 +305,10 @@ function getServitudeWriter(key) {
     return new ServitudeWriter(key);
 }
 
-function importDataset(dataset, done) {
+function importDataset(dataset) {
     debug('importing dataset');
     let count = 0;
+    dataset.coverage.forEach(dep => globalCoverage.add(dep));
     return new Promise((resolve, reject) => {
         getPasserelleRequest(dataset.resourceId)
             .pipe(getParser(dataset))
@@ -360,6 +363,7 @@ removeAssietteIndex()
     .then(createAssietteIndex)
     .then(() => {
         console.log('Import terminé');
+        console.log('Couverture (départements): %s', JSON.stringify(Array.from(globalCoverage.values()).map(dep => dep.substr(3, 2))));
         process.exit(0);
     })
     .catch(err => {
