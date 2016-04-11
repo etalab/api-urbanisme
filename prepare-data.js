@@ -17,6 +17,25 @@ const combine = require('stream-combiner');
 const globalCoverage = new Set();
 
 const datasets = [
+    // Bretagne
+    {
+        coverage: ['dep22', 'dep29', 'dep35', 'dep56'],
+        resourceId: 'services/556c6066330f1fcd48338831/feature-types/drac:bretagne_ac1',
+        source: 'passerelle',
+        filters: ['onlyValidAssiette'],
+        key: 'codeMerimee',
+        mapping: {
+            nom: 'properties.IMMEUBLE',
+            adresse: 'properties.ADRESSE',
+            codeMerimee: 'properties.REF_MERIM',
+            codeCommune: 'properties.INSEE',
+            libelleCommune: 'properties.COMMUNE',
+            assiette: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
     // Midi-Pyrénées
     {
         coverage: ['dep09', 'dep12', 'dep31', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
@@ -260,14 +279,6 @@ const pgClient = new Promise((resolve, reject) => {
 });
 
 const filters = {
-        // computeAssietteAC1: (row, cb) => {
-        //     if (row.generateur) {
-        //         const feature = { type: 'Feature', geometry: row.generateur };
-        //         const buffer = turf.merge(turf.buffer(feature, 500, 'meters')).geometry;
-        //         row.assiette = buffer;
-        //     }
-        //     cb(null, row);
-        // },
         computeAssietteAC1: (row, cb) => {
             if (!row.generateur) return cb(null, row);
 
@@ -275,6 +286,21 @@ const filters = {
                 client.query(format(`SELECT ST_AsGeoJSON(ST_Buffer(ST_SetSRID(ST_GeomFromGeoJSON('%s'), 4326)::geography, 500)) result;`, row.generateur), function (err, result) {
                     if (err) console.error(err);
                     row.assiette = JSON.parse(result.rows[0].result);
+                    cb();
+                });
+            }).catch(cb);
+        },
+        onlyValidAssiette: (row, cb) => {
+            if (!row.assiette) return cb(null, row);
+
+            pgClient.then(client => {
+                client.query(format(`SELECT ST_IsValid(ST_SetSRID(ST_GeomFromGeoJSON('%s'), 4326)) result;`, row.assiette), function (err, result) {
+                    if (err) console.error(err);
+                    const valid = result.rows[0].result;
+                    if (!valid) {
+                        debug('WARN: geometry not valid');
+                        row.assiette = undefined;
+                    };
                     cb();
                 });
             }).catch(cb);
