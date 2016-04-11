@@ -19,7 +19,7 @@ const globalCoverage = new Set();
 const datasets = [
     // Midi-Pyrénées
     {
-        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
+        coverage: ['dep09', 'dep12', 'dep31', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
         resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_immeuble',
         source: 'passerelle',
         key: 'codeMerimee',
@@ -33,7 +33,7 @@ const datasets = [
         },
     },
     {
-        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
+        coverage: ['dep09', 'dep12', 'dep31', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
         resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_perimetr',
         source: 'passerelle',
         key: 'codeMerimee',
