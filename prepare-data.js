@@ -59,14 +59,35 @@ const datasets = [
     },
 ];
 
+let pgEnd;
+
+const pgClient = new Promise((resolve, reject) => {
+    pg.connect(process.env.PG_URI || 'postgres://localhost/urba', function (err, client, done) {
+        if (err) return reject(err);
+        pgEnd = _.once(done);
+        resolve(client);
+    });
+});
+
 const filters = {
-        computeAssietteAC1: row => {
-            if (row.generateur) {
-                const feature = { type: 'Feature', geometry: row.generateur };
-                const buffer = turf.merge(turf.buffer(feature, 500, 'meters')).geometry;
-                row.assiette = buffer;
-            }
-            return row;
+        // computeAssietteAC1: (row, cb) => {
+        //     if (row.generateur) {
+        //         const feature = { type: 'Feature', geometry: row.generateur };
+        //         const buffer = turf.merge(turf.buffer(feature, 500, 'meters')).geometry;
+        //         row.assiette = buffer;
+        //     }
+        //     cb(null, row);
+        // },
+        computeAssietteAC1: (row, cb) => {
+            if (!row.generateur) return cb(null, row);
+
+            pgClient.then(client => {
+                client.query(format(`SELECT ST_AsGeoJSON(ST_Buffer(ST_SetSRID(ST_GeomFromGeoJSON('%s'), 4326)::geography, 500)) result;`, row.generateur), function (err, result) {
+                    if (err) console.error(err);
+                    row.assiette = JSON.parse(result.rows[0].result);
+                    cb();
+                });
+            }).catch(cb);
         },
 };
 
@@ -92,6 +113,7 @@ function importDataset(dataset, done) {
         getPasserelleRequest(dataset.resourceId)
             .pipe(getParser())
             .pipe(through2.obj((row, encoding, cb) => {
+                count++;
                 const transformedRow = {};
                 _.forEach(dataset.mapping, (mappingDef, attrName) => {
                     const val = _.get(row, mappingDef);
@@ -101,9 +123,10 @@ function importDataset(dataset, done) {
                     transformedRow[attrName] = val;
                 });
                 if (dataset.filters) {
-                    _.forEach(dataset.filters, filterName => filters[filterName](transformedRow));
+                    return async.each(dataset.filters, (filterName, filterApplied) => filters[filterName](transformedRow, filterApplied), () => {
+                        cb(null, transformedRow);
+                    });
                 }
-                count++;
                 cb(null, transformedRow);
             }))
             .pipe(getServitudeWriter(dataset.key))

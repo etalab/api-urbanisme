@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "JSONStream": "^1.1.1",
+    "async": "^2.0.0-rc.3",
     "bluebird": "^3.3.4",
     "body-parser": "^1.15.0",
     "cors": "^2.7.1",
@@ -17,6 +18,8 @@
     "express": "^4.13.4",
     "lodash": "^4.7.0",
     "mongodb": "^2.1.14",
+    "pg": "^4.5.2",
+    "pg-format": "^1.0.2",
     "request": "^2.69.0",
     "through2": "^2.0.1",
     "turf": "^2.0.2"
