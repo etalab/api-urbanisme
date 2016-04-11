@@ -8,39 +8,101 @@ const getCollection = require('./lib/mongodb').getCollection;
 const debug = require('debug')('prepare-data');
 const turf = require('turf');
 const through2 = require('through2');
+const pg = require('pg');
+const async = require('async');
+const format = require('pg-format');
+const iconv = require('iconv-lite');
+const combine = require('stream-combiner');
 
 const datasets = [
     // Midi-Pyrénées
+    // {
+    //     coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
+    //     resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_immeuble',
+    //     source: 'passerelle',
+    //     key: 'codeMerimee',
+    //     mapping: {
+    //         nom: 'properties.libelle',
+    //         codeMerimee: 'properties.cd_merimee',
+    //         generateur: 'geometry',
+    //     },
+    //     set: {
+    //         type: 'AC1',
+    //     },
+    // },
+    // {
+    //     coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
+    //     resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_perimetr',
+    //     source: 'passerelle',
+    //     key: 'codeMerimee',
+    //     mapping: {
+    //         nom: 'properties.libelle',
+    //         codeMerimee: 'properties.cd_merimee',
+    //         libelleCommune: 'properties.lb_com',
+    //         assiette: 'geometry',
+    //     },
+    //     set: {
+    //         type: 'AC1',
+    //     },
+    // },
+    // Aquitaine Limousin Poitou Charentes
     {
-        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
-        resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_immeuble',
+        coverage: ['dep16'],
+        resourceId: 'file-packages/fb05166792170f2475a707dd75c0af588327f759/N_AC1_GENERATEUR_SUP_S_016',
         source: 'passerelle',
-        key: 'codeMerimee',
+        decode: 'win1252',
+        key: 'nom',
+        filters: ['computeAssietteAC1'],
         mapping: {
-            nom: 'properties.libelle',
-            codeMerimee: 'properties.cd_merimee',
+            nom: 'properties.NOM_GEN',
+            niveauProtection: 'properties.PROTECTION',
             generateur: 'geometry',
         },
         set: {
             type: 'AC1',
         },
     },
+    // Centre
     {
-        coverage: ['dep09', 'dep12', 'dep21', 'dep32', 'dep46', 'dep65', 'dep81', 'dep82'],
-        resourceId: 'services/55673a34330f1fcd4832db30/feature-types/monuments_historiques_perimetr',
+        coverage: ['dep45'],
+        resourceId: 'file-packages/357f64f080c4365fb805999ea87d2030ae5726fd/AC1_GENERATEUR_SUP_S_045',
         source: 'passerelle',
+        decode: 'win1252',
         key: 'codeMerimee',
+        filters: ['computeAssietteAC1'],
         mapping: {
-            nom: 'properties.libelle',
-            codeMerimee: 'properties.cd_merimee',
-            libelleCommune: 'properties.lb_com',
-            assiette: 'geometry',
+            nom: 'properties.nomGen',
+            codeMerimee: 'properties.Ref_merim',
+            codeCommune: 'properties.Insee',
+            niveauProtection: 'properties.Type',
+            generateur: 'geometry',
         },
         set: {
             type: 'AC1',
         },
     },
-    // Rhône-Alpes
+    // Grand Est
+    {
+        coverage: ['dep68'],
+        resourceId: 'file-packages/9387da9ba5d2c583ca64286d3c262381db4ff28b/N_MONUMENT_HISTO_S_068',
+        source: 'passerelle',
+        decode: 'win1252',
+        key: 'codeMerimee',
+        filters: ['computeAssietteAC1'],
+        mapping: {
+            nom: 'properties.Immeuble',
+            adresse: 'properties.Adresse',
+            codeMerimee: 'properties.Ref_merim',
+            libelleCommune: 'properties.Commune',
+            codeCommune: 'properties.Insee',
+            niveauProtection: 'properties.Protection',
+            generateur: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
+    // Auvergne Rhône Alpes
     {
         coverage: ['dep73'],
         resourceId: 'file-packages/61e138a0f0287e348941002cef37d138b9ca6ed9/N_MONUMENT_HISTO_S_073',
@@ -92,14 +154,23 @@ const filters = {
 };
 
 function getPasserelleRequest(resourceId) {
+    debug('fetching %s', resourceId);
     return request({
         url: `https://inspire.data.gouv.fr/api/geogw/${resourceId}/download`,
         qs: { format: 'GeoJSON', projection: 'WGS84' }
     });
 }
 
-function getParser() {
-    return JSONStream.parse('features.*');
+function getParser(dataset) {
+    const jsonDecoder = JSONStream.parse('features.*');
+    if (dataset.decode) {
+        debug('start decoding %s', dataset.decode);
+        return combine(
+            iconv.decodeStream(dataset.decode),
+            jsonDecoder
+        );
+    }
+    return jsonDecoder;
 }
 
 function getServitudeWriter(key) {
@@ -111,7 +182,7 @@ function importDataset(dataset, done) {
     let count = 0;
     return new Promise((resolve, reject) => {
         getPasserelleRequest(dataset.resourceId)
-            .pipe(getParser())
+            .pipe(getParser(dataset))
             .pipe(through2.obj((row, encoding, cb) => {
                 count++;
                 const transformedRow = {};

@@ -16,11 +16,13 @@
     "cors": "^2.7.1",
     "debug": "^2.2.0",
     "express": "^4.13.4",
+    "iconv-lite": "^0.4.13",
     "lodash": "^4.7.0",
     "mongodb": "^2.1.14",
     "pg": "^4.5.2",
     "pg-format": "^1.0.2",
     "request": "^2.69.0",
+    "stream-combiner": "^0.2.2",
     "through2": "^2.0.1",
     "turf": "^2.0.2"
   }
