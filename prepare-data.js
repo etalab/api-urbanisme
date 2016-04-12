@@ -17,6 +17,27 @@ const combine = require('stream-combiner');
 const globalCoverage = new Set();
 
 const datasets = [
+    // Pays de la Loire
+    {
+        coverage: ['dep44', 'dep49', 'dep53', 'dep72', 'dep85'],
+        resourceId: 'services/556c604a330f1fcd48337cff/feature-types/n_perimetre_mh_r52',
+        recordId: '080e1094c6cf64ea3e27bd9cf01b1e1a52c331ed',
+        source: 'passerelle',
+        filters: ['onlyValidAssiette'],
+        key: 'codeMerimee',
+        mapping: {
+            nom: 'properties.immeuble',
+            codeLocal: 'properties.code',
+            codeMerimee: 'properties.ref_merim',
+            niveauProtection: 'properties.protection',
+            codeCommune: 'properties.insee',
+            libelleCommune: 'properties.commune',
+            assiette: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
     // Bretagne
     {
         coverage: ['dep22', 'dep29', 'dep35', 'dep56'],
