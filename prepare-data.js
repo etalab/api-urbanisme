@@ -17,6 +17,46 @@ const combine = require('stream-combiner');
 const globalCoverage = new Set();
 
 const datasets = [
+    // Normandie
+    {
+        coverage: ['dep61'],
+        resourceId: 'file-packages/6d92006611ee9c9542e65f201f3702427286ada3/N_MONUMENT_HISTO_S_061.TAB',
+        recordId: '0ff13b671c8f4baac05a3860644854e7b5f6404d',
+        source: 'passerelle',
+        decode: 'win1252',
+        filters: ['computeAssietteAC1'],
+        key: 'codeMerimee',
+        mapping: {
+            nom: 'properties.NOM',
+            codeMerimee: 'properties.REF_MER',
+            codeLocal: 'properties.ID_MISTRAL',
+            niveauProtection: 'properties.TYPE_JURIDIQUE',
+            codeCommune: 'properties.INSEE',
+            libelleCommune: 'properties.COMMUNE',
+            generateur: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
+    {
+        coverage: ['dep61'],
+        resourceId: 'file-packages/76343b34eb3d432d395ace9fd6eb8e7e3dcf4e19/N_MONUMENT_HISTO_AC1_ZINF_S_061.TAB',
+        recordId: '5e288473f74a469e6a9fc2bca07ae6122d506fe3',
+        source: 'passerelle',
+        decode: 'win1252',
+        key: 'codeLocal',
+        mapping: {
+            nom: 'properties.NOM',
+            codeLocal: 'properties.Code',
+            codeCommune: 'properties.Insee',
+            libelleCommune: 'properties.Commune',
+            assiette: 'geometry',
+        },
+        set: {
+            type: 'AC1',
+        },
+    },
     // Pays de la Loire
     {
         coverage: ['dep44', 'dep49', 'dep53', 'dep72', 'dep85'],
